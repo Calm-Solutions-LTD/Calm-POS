@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     
     # My apps
     "core",
+    "accounts",
     
     # Third Party Packages
     "django_htmx",
@@ -105,6 +106,11 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'core.wsgi.application'
+
+
+AUTH_USER_MODEL = 'accounts.User'
+# LOGIN_REDIRECT_URL = '/accounts/login'
+# LOGIN_URL  = '/accounts/login'
 
 
 # Database
@@ -238,11 +244,6 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
-
-
-# AUTH_USER_MODEL = 'accounts.User'
-# LOGIN_REDIRECT_URL = '/accounts/login'
-# LOGIN_URL  = '/accounts/login'
 
 
 # Internationalization

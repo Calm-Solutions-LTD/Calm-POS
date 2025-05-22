@@ -114,21 +114,27 @@ These modules form the foundational functionality of the Platform and will be av
 *   **2.3.2. Key Features:**
     *   **Account Types:**
         *   **Individual (Sole Proprietor):** Simplified setup, single user with full access (or predefined limited roles if they add staff).
-        *   **Organization:** Hierarchical structure for multiple users, locations, and roles.
-    *   **Flexible Role Creation:** Admins can define custom roles (e.g., Cashier, Manager, Admin, Owner, Server, Stock Controller).
-    *   **Granular Permissions:** Assign specific permissions to roles (e.g., view sales, process refunds, edit products, access specific reports, override prices, manage users). Permissions are tied to specific functions within modules.
+        *   **Organization:** Hierarchical structure for multiple users, locations, and roles. Each user and organization will have a UUID field (in addition to the default Django PK) for secure, non-predictable identification.
+    *   **Flexible Role Creation:** Admins can define custom roles (e.g., Cashier, Manager, Admin, Owner, Server, Stock Controller). Roles and permissions are managed via a custom Role model, with permissions as string constants (e.g., Permissions.ACCESS_BLAH_BLAH), and checked via user.has_permission(Permissions.ACCESS_BLAH_BLAH).
+    *   **Granular Permissions:** Assign specific permissions to roles (e.g., view sales, process refunds, edit products, access specific reports, override prices, manage users). Permissions are tied to specific functions within modules and are easy to query.
     *   **User-Specific Overrides:** Option for an admin to grant or revoke specific permissions for an individual user, overriding their assigned role's defaults.
     *   **Secure Login Mechanisms:**
-        *   Standard email and strong password authentication.
-        *   **X-digit PINs:** Configurable (e.g., 4-6 digits) for quick login/unlock at shared POS stations. Tied to a user account.
+        *   Standard email and strong password authentication (email is the unique identifier).
+        *   **X-digit PINs:** Configurable (e.g., 4-6 digits) for quick login/unlock at shared POS stations. Tied to a user account. PINs are securely hashed.
         *   **Multi-level Action Authorization:** Certain sensitive actions (e.g., voiding a completed transaction, applying high-value discounts, opening cash drawer without a sale) can be configured to require manager override (via PIN, password, or potentially RFID card scan).
-        *   Optional Two-Factor Authentication (OTP via email or authenticator app) for admin accounts or sensitive operations.
+        *   Optional Two-Factor Authentication (TFA/2FA, OTP via email or authenticator app) for admin accounts or sensitive operations. TFA can be enabled/disabled per user, and admins can require users to reset TFA or password (enforced via middleware on login).
         *   Potential for RFID card/fob scanner integration for login or quick user switching at POS stations.
     *   Basic employee clock-in/clock-out functionality (records timestamps).
-    *   Comprehensive audit trails: Log significant user actions (logins, sales, voids, data changes) with timestamps and user details.
+    *   Comprehensive audit trails: Log significant user actions (logins, sales, voids, data changes) with timestamps and user details. Logging is detailed and handled via a dedicated model (e.g., UserActionLog).
     *   **Bulk User CRUD Operations:** Import/update users via CSV/Excel templates.
+    *   **User Profile & Preferences:** Each user has a UserProfile model for additional info (avatar, preferences, etc.), and UserPreferences/OrganizationPreferences models for storing preferences.
+    *   **Password Reset Tokens:** Password reset tokens/codes are tracked in a dedicated model, including expiry and usage status.
+    *   **Custom User Manager:** All user creation and management is handled via a custom user manager.
+    *   **Signals:** Django signals are used for post-save, post-delete, and other hooks (e.g., logging, notifications, updating related models).
+    *   **Full Name:** Users have a single full_name field for flexibility (no splitting into first/middle/last names).
+    *   **Superuser/Platform Admin:** Platform-level admins are handled using Django's is_staff and is_superuser fields (no extra is_platform_admin field).
 *   **2.3.3. Target Industries:** Universal.
-*   **2.3.4. Functional Overview:** Admins set up user accounts, assign them to predefined or custom roles, and manage their access permissions. Users log in using their credentials, and the system restricts their access and available actions based on their assigned permissions.
+*   **2.3.4. Functional Overview:** Admins set up user accounts, assign them to predefined or custom roles, and manage their access permissions. Users log in using their credentials, and the system restricts their access and available actions based on their assigned permissions. All major models use UUIDs for secure identification. TFA, logging, and password reset enforcement are supported.
 
 ### 2.4. Basic Reporting & Analytics Module
 *   **2.4.1. Description:** Provides essential insights into sales and business performance.
@@ -546,6 +552,7 @@ As detailed in section 3.10, the KRA iTax Integration Module is crucial for ensu
 ### 7.1. Data Encryption
 *   **In Transit:** All communication between the client (browser) and the server, and between the server and third-party services (payment gateways, KRA), will use HTTPS with strong TLS encryption.
 *   **At Rest:** Sensitive data in the PostgreSQL database (e.g., user credentials, business financial data) will be encrypted using industry-standard encryption mechanisms (e.g., AES-256). Particular attention to encrypting personally identifiable information (PII).
+*   **UUIDs:** All major models (User, Organization, Role, etc.) will include a UUID field (models.UUIDField) in addition to the default Django primary key, to ensure secure, non-predictable identifiers for API and external references.
 
 ### 7.2. User Authentication & Authorization
 *   Strong password policies enforced (complexity, length).
@@ -569,6 +576,198 @@ As detailed in section 3.10, the KRA iTax Integration Module is crucial for ensu
 *   Implement intrusion detection/prevention systems (IDS/IPS) at the network level.
 *   Data backup and disaster recovery plan.
 
-## 8. Conclusion
+## 8. Suggested Project Structure
 
-CalmPOS aims to provide a modern, flexible, and secure POS solution tailored to the needs of Kenyan businesses. By focusing on a modular design, robust core features, critical local integrations, and a user-friendly experience, the Platform is well-positioned to empower businesses to thrive in a dynamic market. The API-first approach ensures future adaptability and integration capabilities. This detailed plan provides a solid blueprint for the development and successful launch of the Platform.
+```
+Calm-POS/
+├── core/                 
+│   ├── asgi.py           
+│   ├── settings.py       
+│   ├── urls.py           
+│   ├── wsgi.py           
+│   └── __init__.py       
+├── accounts/             
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── sales/                
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── inventory/            
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── reports/              
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── core_settings/        
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── payments/             
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── advanced_inventory/   
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── crm/                  
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── orders/               
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── hospitality/          
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── kds/                  
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── menu/                 
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── communications/       
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── commissions/          
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── payroll/              
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── kra_integration/      
+│   ├── migrations/
+│   │   └── __init__.py
+│   ├── admin.py
+│   ├── apps.py
+│   ├── models.py         
+│   ├── tests.py
+│   ├── urls.py
+│   ├── views.py
+│   └── __init__.py
+├── logs/                 
+│   └── django.log        
+├── static/               
+├── .env                  
+├── .env.example          
+├── .gitignore            
+├── manage.py             
+├── plan.md               
+├── README.md             
+└── requirements.txt      
+```
+
+## 9. Project Rules & Technical Guidelines
+
+*   All forms and validation will be handled via Django views and HTTP methods (POST, etc.), not Django forms. No use of Django's form classes in this project.
+*   All major models must include a UUID field for secure, non-sequential identification.
+*   Use Django signals for post-save, post-delete, and other event hooks (e.g., logging, notifications, updating related models).
+*   All authentication and user management must use a custom user model and custom user manager from the start.
+*   User and organization preferences must be stored in dedicated models (UserPreferences, OrganizationPreferences).
+*   All permissions must be string constants and easily queryable via user.has_permission(Permissions.SOME_PERMISSION).
+*   TFA/2FA must be supported and enforceable by admin, with middleware to require resets as needed.
+*   Detailed logging and audit trails are required for all significant user and system actions.
+*   Password reset tokens/codes must be tracked in a dedicated model.
+*   Use a single full_name field for user names.
+*   Superuser/platform admin is handled using Django's is_staff and is_superuser fields only.
