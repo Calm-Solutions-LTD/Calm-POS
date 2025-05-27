@@ -1,0 +1,20 @@
+{% extends 'core/base.html' %}
+
+{% block sidebar %}
+    {% include 'core/components/sidebar.html' %}
+{% endblock %}
+
+{% block nav %}
+    {% include 'core/components/navbar.html' %}
+{% endblock %}
+
+{% block content %}
+    <div class="text-2xl md:text-3xl font-semibold mb-6 text-theme-body-text">Welcome, {{ request.user.full_name }}!</div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+        <a href="#" class="bg-theme-navbar-bg border border-gray-300 rounded-xl shadow hover:shadow-lg transition p-6 text-center font-bold text-lg text-theme-body-text cursor-pointer">View Sales & KPIs</a>
+        <a href="#" class="bg-theme-navbar-bg border border-gray-300 rounded-xl shadow hover:shadow-lg transition p-6 text-center font-bold text-lg text-theme-body-text cursor-pointer">Manage Inventory</a>
+        <a href="#" class="bg-theme-navbar-bg border border-gray-300 rounded-xl shadow hover:shadow-lg transition p-6 text-center font-bold text-lg text-theme-body-text cursor-pointer">User Management</a>
+        <a href="#" class="bg-theme-navbar-bg border border-gray-300 rounded-xl shadow hover:shadow-lg transition p-6 text-center font-bold text-lg text-theme-body-text cursor-pointer">System Settings</a>
+        <a href="#" class="bg-theme-navbar-bg border border-gray-300 rounded-xl shadow hover:shadow-lg transition p-6 text-center font-bold text-lg text-theme-body-text cursor-pointer">Provision Terminals</a>
+    </div>
+{% endblock %} 

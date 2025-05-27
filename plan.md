@@ -85,8 +85,10 @@ These modules form the foundational functionality of the Platform and will be av
             *   Preferred default POS layout (if multiple are assigned to their role).
             *   Size of product images in search results or quick select buttons.
             *   Density of information displayed.
+    *   Supports fast "offline" PIN login for previously authenticated users on that terminal by validating against a temporary local cache of hashed credentials (see 4.2.4).
 *   **2.1.3. Target Industries:** Universal (Retail, Food & Beverage, Services, etc.).
 *   **2.1.4. Functional Overview:** Users (cashiers, servers) log in to the POS interface. They can handle multiple customer orders concurrently, seamlessly switching between active carts. Items are added rapidly via scanning or intuitive lookup. Discounts and coupons are applied as per system configurations. The UI clearly reflects pricing. Users complete sales using various payment methods. The module updates inventory in real-time (when online, or syncs when reconnected) and records all transaction data for reporting. User preferences allow for a more personalized and efficient workspace.
+
 
 ### 2.2. Basic Inventory Management Module
 *   **2.2.1. Description:** Manages product information and tracks stock levels.
@@ -373,6 +375,13 @@ These are overarching features that enhance the usability and power of the Platf
     *   **Optimistic Updates:** The UI updates immediately upon user action (e.g., item added to cart, quantity changed), providing instant feedback. The system assumes the action is successful locally, and any discrepancies are handled during the backend synchronization process.
     *   **Backend API for Essential Processing:** Backend APIs are optimized for receiving and processing batches of core transactional data (sales, payments recorded offline, inventory adjustments) efficiently once the client syncs. Non-essential data processing or extensive computations can be deferred to reduce immediate load.
     *   **Conflict Resolution Strategy:** A clear strategy for handling data conflicts during synchronization will be implemented (e.g., for inventory levels if multiple offline terminals sell the same last item, it could be first-sync-wins, flagging for manual review, or a more sophisticated reservation system if feasible for critical items).
+*   **4.2.4. Offline Fast PIN Login (POS SPA):**
+    *   To enhance speed, after a user's initial successful *online* PIN login on a specific terminal, the POS SPA will securely cache a hashed version of their PIN and basic role information locally (`IndexedDB`) for a limited, configurable duration (e.g., shift duration).
+    *   Subsequent PIN entry attempts by that user on the same terminal *within the cached duration* will be validated against this local cache first.
+    *   If validated locally, login is immediate, providing a fast "offline login" experience. The user can perform offline-capable actions.
+    *   If the local cache lookup fails (no entry, expired, or PIN mismatch), the SPA will attempt a full online authentication. If the device is offline, login will fail.
+    *   This local cache is scoped to the terminal and organization, and raw PINs are never stored. Cached credentials expire automatically.
+    *   This feature requires the user to have logged in online at least once on that terminal for their credentials to be cached.
 
 ### 4.3. Customization & Whitelabeling
 *   **How it works:**
@@ -406,6 +415,21 @@ These are overarching features that enhance the usability and power of the Platf
     *   Easier development of alternative frontends (e.g., native mobile apps) in the future.
     *   Ability to offer the API to third-party developers or for custom integrations by clients.
     *   Better testability of backend logic.
+    
+### 4.8. POS/KDS Application Access Model
+
+*   **4.8.1. Unified Access Point:** The POS and KDS applications are accessed via specific URL paths from the main domain (e.g., `calmpos.com/pos/`, `calmpos.com/kds/`) rather than subdomains. These paths serve a client-side Single Page Application (SPA).
+*   **4.8.2. Terminal Provisioning & Identity:**
+    *   Each physical POS terminal or KDS display unit (or its browser instance) must be "provisioned" once.
+    *   During provisioning (done by an Organization Admin via the main dashboard or a special setup flow on the terminal itself), the terminal is assigned a unique `Terminal ID` and associated with a specific `Organization` and `Location`.
+    *   This `Terminal ID` is stored locally on the terminal (e.g., browser's `localStorage`) and registered on the backend.
+    *   The POS/KDS SPA uses this `Terminal ID` to establish its operational context (which organization it belongs to) without requiring manual organization selection at login.
+*   **4.8.3. Staff Authentication at Terminal:**
+    *   For daily use, staff (cashiers, waiters) log into the POS SPA using their X-digit PIN or by scanning an RFID card/fob.
+    *   The SPA sends the PIN/RFID data along with the `Terminal ID` to a dedicated API endpoint.
+    *   The backend validates the credentials against users *within the organization associated with the `Terminal ID`*.
+    *   Upon successful authentication, the API issues a short-lived API token (e.g., JWT) that the SPA uses for subsequent requests during that session.
+*   **4.8.4. Quick Lock/Logout:** The POS SPA will feature configurable automatic quick lock/logout after inactivity or key actions, and a manual logout option, returning the interface to the PIN entry screen for security and efficiency on shared terminals.
 
 ## 5. User SaaS Flow
 
@@ -451,6 +475,14 @@ These are overarching features that enhance the usability and power of the Platf
     2.  Upload business logo.
     3.  Select color theme and fonts.
     4.  Preview changes. Save settings.
+*   **5.1.8. Initial POS/KDS Terminal Provisioning (Admin Task via Dashboard):**
+    1.  Admin navigates to `Dashboard > Settings > Terminals`.
+    2.  Option to "Add New Terminal" (POS or KDS type).
+    3.  Selects the Location for the terminal.
+    4.  System provides a one-time "Setup Code."
+    5.  (Instructions for on-terminal setup): On the actual POS/KDS device, navigate to `calmpos.com/pos/` (or `/kds/`). If unprovisioned, the application will prompt for this Setup Code.
+    6.  Entering the Setup Code on the terminal links it to the Organization/Location and stores a local `Terminal ID`.
+    7.  Alternatively, an admin with an active dashboard session on the terminal device itself can provision it directly through a guided flow at `calmpos.com/pos/` if it's unprovisioned.
 
 ### 5.2. Day-to-Day Operations
 *   **5.2.1. User Login:**
@@ -496,6 +528,65 @@ These are overarching features that enhance the usability and power of the Platf
     4.  Composes message or selects a template. Personalizes.
     5.  Sends immediately or schedules for later.
     6.  Reviews basic delivery/open analytics.
+*   **5.2.8. Admin/Manager Access (via `calmpos.com/dashboard/`)
+
+*   **5.2.8.1. Login to Dashboard:**
+    1.  Manager/Admin navigates to `calmpos.com/login/`.
+    2.  Enters email and password (and OTP if 2FA is enabled).
+    3.  Upon success, is redirected to `calmpos.com/dashboard/`.
+*   **5.2.8.2. Dashboard Tasks (Examples):**
+    *   Reviewing KPIs and sales reports (Reporting Module).
+    *   Managing products and inventory (Inventory Module).
+    *   Managing staff accounts, roles, and permissions (User Management Module).
+    *   Configuring system settings, promotions, KRA details (System Settings Module).
+    *   Provisioning new POS/KDS terminals.
+    *   Generating Setup Codes for terminal provisioning.
+    *   (Other tasks as previously listed for Manager/Admin roles, performed via the web dashboard interface).
+
+*   **5.2.9. POS Terminal Operations (Cashier/Waiter via `calmpos.com/pos/` SPA)
+
+*   **5.2.9.1. Accessing the POS Application:**
+    1.  Staff member opens a web browser on a provisioned POS terminal and navigates to `calmpos.com/pos/`.
+    2.  The POS SPA loads. It checks for a local `Terminal ID`.
+        *   If no `Terminal ID` (unprovisioned): SPA displays "Terminal Setup Required" (prompts for Setup Code or Admin Login for provisioning - see 5.1.8).
+        *   If `Terminal ID` found: SPA displays "Staff Login for [Organization Name] - [Location Name]" with a PIN pad.
+*   **5.2.9.2. Staff Login (PIN/RFID):**
+    1.  Cashier/Waiter enters their X-digit PIN or scans their RFID card/fob.
+    2.  SPA sends PIN/RFID + `Terminal ID` to the backend API for authentication.
+    3.  On success, API returns an auth token; SPA loads the main sales interface tailored to the user's role.
+*   **5.2.9.3. Sales Operations (Cashier/Waiter Role Example using POS SPA):**
+    1.  Start Shift (if clock-in/out is used - may be part of login or a separate action in SPA).
+    2.  Main sales screen:
+        *   Add items by scanning barcode/QR, searching, or using quick select buttons. (SPA interacts with backend APIs for product lookup if not cached locally).
+        *   Manage concurrent active carts/tabs within the SPA.
+        *   Apply discounts/promotions (may require manager override via API-triggered prompt).
+    3.  Select payment method(s) (cash, M-Pesa STK push, card). (SPA interacts with payment APIs).
+    4.  Process payment.
+    5.  Issue receipt (fiscalized data from API, formatted by SPA for print/digital).
+    6.  Handle returns/exchanges.
+    7.  **Quick Lock/Logout:**
+        *   After a transaction or period of inactivity (configurable), the SPA automatically returns to the PIN login screen, clearing the previous user's session token.
+        *   User can also manually "Logout" or "Switch User" via a button in the SPA.
+*   **5.2.9.4. Waiter-Specific Operations (within POS SPA, if Table Management active):**
+    1.  After PIN login, may see Table Management layout first.
+    2.  Selects table, adds items to order (items sent to KDS via API).
+    3.  Monitors order status (data from KDS via API).
+    4.  Retrieves table bill, processes payment.
+*   **5.2.9.5. End of Shift (from POS SPA):**
+    1.  Authorized user initiates Z-report generation from the SPA.
+    2.  SPA requests Z-report data from API.
+    3.  User cashes out, then logs out fully (or terminal auto-locks).
+
+*   **5.2.10. Kitchen Display System (KDS) Operations (Kitchen Staff via `calmpos.com/kds/` SPA)
+
+*   **5.2.10.1. Accessing the KDS Application:**
+    1.  Kitchen staff view a KDS display unit (tablet/screen) with a browser navigated to `calmpos.com/kds/`.
+    2.  The KDS SPA loads. It uses its locally stored `Terminal ID` (provisioned as a KDS type for a specific station).
+    3.  (Authentication might be implicit based on trusted device, or a simple startup PIN/code).
+*   **5.2.10.2. Viewing and Managing Orders:**
+    1.  KDS SPA continuously polls (or uses WebSockets with) an API endpoint for new/updated orders relevant to its station.
+    2.  Displays incoming orders, prioritizes them.
+    3.  Kitchen staff interact with the KDS SPA to mark items/orders as "Preparing," "Ready." (SPA sends these updates to the backend via API).
 
 ### 5.3. Management & Configuration (Admin/Manager Roles)
 *   **5.3.1. User & Role Management:**

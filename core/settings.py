@@ -36,13 +36,13 @@ DEBUG = os.getenv('DEBUG', True)
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
-    '192.168.1.102',
+    '192.168.1.106',
     'ngrok-free.app',
     '78.46.229.209'
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'http://192.168.1.102:8000',
+    'http://192.168.1.106:8000',
     'http://78.46.229.209:7013',
     "https://*.ngrok-free.app",
     "http://localhost:5500"
@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     # My apps
     "core",
     "accounts",
+    "dashboard",
     
     # Third Party Packages
     "django_htmx",
@@ -109,8 +110,8 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 
 AUTH_USER_MODEL = 'accounts.User'
-# LOGIN_REDIRECT_URL = '/accounts/login'
-# LOGIN_URL  = '/accounts/login'
+LOGIN_REDIRECT_URL = '/account/login'
+LOGIN_URL  = '/account/login'
 
 
 # Database

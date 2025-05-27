@@ -1,0 +1,17 @@
+<nav class="navbar w-full border-b flex items-center justify-between px-4 py-2 sticky top-0 z-30 bg-theme-navbar-bg text-theme-navbar-text">
+    <div class="flex items-center gap-2">
+        <button id="sidebar-hamburger" aria-label="Open sidebar" class="block lg:hidden text-2xl hover:text-opacity-75 focus:outline-none mr-2 text-theme-navbar-text">
+            <i class="fas fa-bars"></i>
+        </button>
+        {% if request.user.organization and request.user.organization.logo %}
+            <img src="{{ request.user.organization.logo.url }}" alt="Logo" class="h-8 w-auto rounded bg-theme-navbar-bg p-1" />
+        {% else %}
+            <span class="font-bold text-xl text-theme-primary">CalmPOS</span>
+        {% endif %}
+    </div>
+    <div class="flex items-center gap-4">
+        {% block navbar_actions %}
+            <span class="font-medium text-theme-navbar-text">{{ request.user.full_name }}</span>
+        {% endblock %}
+    </div>
+</nav> 

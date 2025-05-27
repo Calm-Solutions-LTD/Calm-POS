@@ -1,0 +1,208 @@
+{% extends "account/auth/base.html" %}
+
+{% block title %}Login - Calm POS{% endblock %}
+
+{% block content %}
+<h2 class="text-3xl font-bold text-theme-primary mb-2 text-center">Welcome Back!</h2>
+<p class="text-theme-body-text mb-8 text-center">Please enter your credentials to login.</p>
+
+<form id="login-form" class="space-y-6">
+    <input type="hidden" id="next" name="next" value="{{ next|default:'/' }}">
+    <div>
+        <label for="email" class="block text-sm font-medium text-theme-body-text mb-1">Email Address</label>
+        <input type="email" id="email" name="email" required 
+               class="w-full px-4 py-3 border border-theme-primary rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-transparent bg-theme-body-bg text-theme-body-text"
+               placeholder="you@example.com" autocomplete="email">
+    </div>
+
+    <div>
+        <label for="password" class="block text-sm font-medium text-theme-body-text mb-1">Password</label>
+        <input type="password" id="password" name="password" required 
+               class="w-full px-4 py-3 border border-theme-primary rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-transparent bg-theme-body-bg text-theme-body-text"
+               placeholder="Enter your password" autocomplete="current-password">
+    </div>
+
+    <div class="flex items-center justify-between mt-4">
+        <div class="text-sm">
+            <a href="{% url 'forgot_password_page' %}" class="font-medium text-theme-primary hover:text-theme-secondary">
+                Forgot your password?
+            </a>
+        </div>
+    </div>
+
+    <button type="submit" 
+            class="w-full py-3 px-4 bg-theme-gradient text-white font-semibold rounded-lg shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 transition-all duration-150 ease-in-out">
+        Login
+    </button>
+</form>
+
+<!-- 2FA Form (hidden by default) -->
+<form id="tfa-form" class="space-y-6" style="display:none;">
+    <div id="tfa-method-select-container" class="mb-4" style="display:none;">
+        <label for="tfa-method" class="block text-sm font-medium text-theme-body-text mb-1">Choose 2FA Method</label>
+        <select id="tfa-method" name="tfa-method" class="w-full px-4 py-3 border border-theme-primary rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-transparent bg-theme-body-bg text-theme-body-text"></select>
+        <button type="button" id="send-tfa-code" class="mt-2 px-4 py-2 bg-theme-primary text-white rounded hover:bg-theme-secondary" style="display:none;">Send Code</button>
+    </div>
+    <div>
+        <label for="tfa-code" class="block text-sm font-medium text-theme-body-text mb-1">Enter 2FA Code</label>
+        <input type="text" id="tfa-code" name="tfa-code" maxlength="6" required 
+               class="w-full px-4 py-3 border border-theme-primary rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-theme-primary focus:border-transparent bg-theme-body-bg text-theme-body-text"
+               placeholder="Enter the code">
+    </div>
+    <button type="submit" 
+            class="w-full py-3 px-4 bg-theme-gradient text-white font-semibold rounded-lg shadow-md hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-theme-primary focus:ring-offset-2 transition-all duration-150 ease-in-out">
+        Verify Code
+    </button>
+    <div class="text-sm text-center">
+        <button type="button" id="resend-tfa-code" class="text-theme-primary hover:text-theme-secondary" style="display:none;">Resend Code</button>
+    </div>
+</form>
+
+<div id="message" class="mt-6 text-center"></div>
+
+<p class="mt-8 text-center text-sm text-theme-body-text">
+    Don't have an account? 
+    <a href="{% url 'register_page' %}" class="font-medium text-theme-primary hover:text-theme-secondary">
+        Create a new account
+    </a>
+</p>
+
+<script>
+let tfaUserUUID = null;
+let tfaMethods = [];
+let tfaPreferred = null;
+let tfaCurrentMethod = null;
+
+const loginForm = document.getElementById('login-form');
+const tfaForm = document.getElementById('tfa-form');
+const tfaMethodSelect = document.getElementById('tfa-method');
+const tfaMethodSelectContainer = document.getElementById('tfa-method-select-container');
+const sendTfaCodeBtn = document.getElementById('send-tfa-code');
+const resendTfaCodeBtn = document.getElementById('resend-tfa-code');
+const msgDiv = document.getElementById('message');
+
+loginForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const form = e.target;
+    const data = {
+        email: form.email.value,
+        password: form.password.value
+    };
+    const response = await fetch('{% url "api_login" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify(data)
+    });
+    const result = await response.json();
+    if (response.ok && result.tfa_required) {
+        // 2FA required
+        tfaUserUUID = result.user_uuid;
+        tfaMethods = result.methods;
+        tfaPreferred = result.preferred;
+        tfaCurrentMethod = tfaPreferred;
+        loginForm.style.display = 'none';
+        tfaForm.style.display = '';
+        msgDiv.textContent = result.message || 'Two-factor authentication required.';
+        msgDiv.className = 'mt-6 text-center text-blue-600 font-medium';
+        // Populate method select if multiple
+        if (tfaMethods.length > 1) {
+            tfaMethodSelect.innerHTML = '';
+            tfaMethods.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m.toUpperCase();
+                if (m === tfaPreferred) opt.selected = true;
+                tfaMethodSelect.appendChild(opt);
+            });
+            tfaMethodSelectContainer.style.display = '';
+            sendTfaCodeBtn.style.display = (tfaCurrentMethod === 'sms' || tfaCurrentMethod === 'email') ? '' : 'none';
+        } else {
+            tfaMethodSelectContainer.style.display = 'none';
+        }
+        // If SMS/Email, send code immediately
+        if (tfaCurrentMethod === 'sms' || tfaCurrentMethod === 'email') {
+            await sendTfaCode(tfaCurrentMethod);
+            resendTfaCodeBtn.style.display = '';
+        } else {
+            resendTfaCodeBtn.style.display = 'none';
+        }
+    } else if (response.ok) {
+        msgDiv.textContent = result.message || 'Login successful! Redirecting...';
+        msgDiv.className = 'mt-6 text-center text-green-600 font-medium';
+        const nextUrl = document.getElementById('next')?.value || '/';
+        window.location.href = nextUrl;
+    } else {
+        msgDiv.textContent = result.error || 'Login failed. Please check your credentials.';
+        msgDiv.className = 'mt-6 text-center text-red-600 font-medium';
+    }
+});
+
+tfaMethodSelect && tfaMethodSelect.addEventListener('change', async function(e) {
+    tfaCurrentMethod = e.target.value;
+    sendTfaCodeBtn.style.display = (tfaCurrentMethod === 'sms' || tfaCurrentMethod === 'email') ? '' : 'none';
+    if (tfaCurrentMethod === 'sms' || tfaCurrentMethod === 'email') {
+        await sendTfaCode(tfaCurrentMethod);
+        resendTfaCodeBtn.style.display = '';
+    } else {
+        resendTfaCodeBtn.style.display = 'none';
+    }
+});
+
+sendTfaCodeBtn && sendTfaCodeBtn.addEventListener('click', async function(e) {
+    await sendTfaCode(tfaCurrentMethod);
+    resendTfaCodeBtn.style.display = '';
+});
+
+resendTfaCodeBtn && resendTfaCodeBtn.addEventListener('click', async function(e) {
+    await sendTfaCode(tfaCurrentMethod);
+});
+
+async function sendTfaCode(method) {
+    msgDiv.textContent = 'Sending code...';
+    msgDiv.className = 'mt-6 text-center text-blue-600 font-medium';
+    const response = await fetch('{% url "api_send_2fa_code" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ user_uuid: tfaUserUUID, method })
+    });
+    const result = await response.json();
+    if (response.ok) {
+        msgDiv.textContent = result.message || 'Code sent.';
+        msgDiv.className = 'mt-6 text-center text-blue-600 font-medium';
+    } else {
+        msgDiv.textContent = result.error || 'Failed to send code.';
+        msgDiv.className = 'mt-6 text-center text-red-600 font-medium';
+    }
+}
+
+tfaForm.addEventListener('submit', async function(e) {
+    e.preventDefault();
+    const code = document.getElementById('tfa-code').value;
+    if (!code) return;
+    const response = await fetch('{% url "api_verify_2fa" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': '{{ csrf_token }}'
+        },
+        body: JSON.stringify({ user_uuid: tfaUserUUID, method: tfaCurrentMethod, code })
+    });
+    const result = await response.json();
+    if (response.ok) {
+        msgDiv.textContent = result.message || 'Login successful! Redirecting...';
+        msgDiv.className = 'mt-6 text-center text-green-600 font-medium';
+        const nextUrl = document.getElementById('next')?.value || '/';
+        window.location.href = nextUrl;
+    } else {
+        msgDiv.textContent = result.error || 'Invalid code. Please try again.';
+        msgDiv.className = 'mt-6 text-center text-red-600 font-medium';
+    }
+});
+</script>
+{% endblock %} 

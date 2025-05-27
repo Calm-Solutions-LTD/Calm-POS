@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Calm POS{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    {% load static %}
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style id="dynamic-theme-styles">
+        :root {
+            --theme-primary-color: #7B2FF2;
+            --theme-secondary-color: #1E90FF;
+            --theme-accent-color: #7B2FF2;
+            --theme-gradient: linear-gradient(90deg, #7B2FF2 0%, #1E90FF 100%);
+            --theme-body-background: #F4F6FA;
+            --theme-body-text-color: #222B45;
+            --theme-font-family-sans: ui-sans-serif, system-ui, sans-serif;
+        }
+        .bg-theme-gradient {
+            background: var(--theme-gradient);
+        }
+        .text-theme-primary {
+            color: var(--theme-primary-color);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'theme-primary': 'var(--theme-primary-color)',
+                        'theme-secondary': 'var(--theme-secondary-color)',
+                        'theme-accent': 'var(--theme-accent-color)',
+                        'theme-body-bg': 'var(--theme-body-background)',
+                        'theme-body-text': 'var(--theme-body-text-color)',
+                    },
+                    fontFamily: {
+                        sans: ['var(--theme-font-family-sans)', 'ui-sans-serif', 'system-ui'],
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-theme-body-bg font-sans text-theme-body-text">
+    <div class="min-h-screen flex">
+        <!-- Left Pane (Branding/Image) -->
+        <div class="hidden lg:flex w-1/2 bg-theme-gradient items-center justify-center p-12 text-white relative">
+            <!-- You can add an image or other branding elements here -->
+            <div class="text-center">
+                <h1 class="text-5xl font-bold mb-4">Welcome to CalmPOS</h1>
+                <p class="text-xl">Streamline your business operations with ease.</p>
+            </div>
+            <!-- Decorative shapes (optional) -->
+            <div class="absolute top-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -mt-16 -ml-16"></div>
+            <div class="absolute bottom-0 right-0 w-48 h-48 bg-white opacity-10 rounded-lg transform rotate-45 mb-16 mr-16"></div>
+        </div>
+
+        <!-- Right Pane (Form Content) -->
+        <div class="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12">
+            <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl">
+                {% block content %}
+                <!-- Form content will go here -->
+                {% endblock %}
+            </div>
+        </div>
+    </div>
+</body>
+</html> 

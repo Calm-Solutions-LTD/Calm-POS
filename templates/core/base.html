@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en" style="font-family: var(--theme-font-family-sans); color: var(--theme-body-text-color); background-color: var(--theme-body-background);">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CalmPOS{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css" integrity="sha512-Evv84Mr4kqVGRNSgIGL/F/aIDqQb7xQ2vcrdIwxfjThSH8CSR7PBEakCr51Ck+w+/U6swU2Im1vVX0SVk9ABhg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    {% load static %}
+    {# <link rel="stylesheet" href="{% static 'css/custom.css' %}"> #} {# Theming will be primarily via CSS variables #}
+    <style id="dynamic-theme-styles">
+        :root {
+            /* Brand Colors */
+            --theme-primary-color: {{ organization_preferences.primary_color|default:'#7B2FF2' }}; /* Purple */
+            --theme-secondary-color: {{ organization_preferences.secondary_color|default:'#1E90FF' }}; /* Blue */
+            --theme-accent-color: {{ organization_preferences.accent_color|default:'#7B2FF2' }}; /* Purple */
+            --theme-gradient: linear-gradient(90deg, #7B2FF2 0%, #1E90FF 100%);
+
+            --theme-sidebar-background: {{ organization_preferences.sidebar_background_color|default:'#2D2F6F' }}; /* Dark Blue/Purple */
+            --theme-sidebar-text-color: {{ organization_preferences.sidebar_text_color|default:'#FFFFFF' }}; /* White */
+            --theme-sidebar-hover-background: {{ organization_preferences.sidebar_hover_background_color|default:'#3B3F8F' }}; /* Slightly lighter */
+            --theme-sidebar-hover-text-color: {{ organization_preferences.sidebar_hover_text_color|default:'#FFFFFF' }}; /* White */
+
+            --theme-navbar-background: {{ organization_preferences.navbar_background_color|default:'#FFFFFF' }}; /* White */
+            --theme-navbar-text-color: {{ organization_preferences.navbar_text_color|default:'#222B45' }}; /* Dark Gray/Blue */
+
+            --theme-body-background: {{ organization_preferences.body_background_color|default:'#F4F6FA' }}; /* Very Light Gray */
+            --theme-body-text-color: {{ organization_preferences.body_text_color|default:'#222B45' }}; /* Dark Gray/Blue */
+
+            --theme-font-family-sans: {{ organization_preferences.font_family_sans|default:'ui-sans-serif, system-ui, sans-serif' }};
+            --theme-font-family-serif: {{ organization_preferences.font_family_serif|default:'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif' }};
+            --theme-font-family-mono: {{ organization_preferences.font_family_mono|default:'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace' }};
+        }
+        /* Gradient utility for backgrounds and buttons */
+        .bg-theme-gradient {
+            background: var(--theme-gradient);
+        }
+        .text-theme-primary {
+            color: var(--theme-primary-color);
+        }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'theme-primary': 'var(--theme-primary-color)',
+                        'theme-secondary': 'var(--theme-secondary-color)',
+                        'theme-accent': 'var(--theme-accent-color)',
+                        'theme-sidebar-bg': 'var(--theme-sidebar-background)',
+                        'theme-sidebar-text': 'var(--theme-sidebar-text-color)',
+                        'theme-sidebar-hover-bg': 'var(--theme-sidebar-hover-background)',
+                        'theme-sidebar-hover-text': 'var(--theme-sidebar-hover-text-color)',
+                        'theme-navbar-bg': 'var(--theme-navbar-background)',
+                        'theme-navbar-text': 'var(--theme-navbar-text-color)',
+                        'theme-body-bg': 'var(--theme-body-background)',
+                        'theme-body-text': 'var(--theme-body-text-color)',
+                    },
+                    fontFamily: {
+                        sans: ['var(--theme-font-family-sans)', 'ui-sans-serif', 'system-ui'],
+                        serif: ['var(--theme-font-family-serif)', 'ui-serif', 'Georgia'],
+                        mono: ['var(--theme-font-family-mono)', 'ui-monospace', 'SFMono-Regular'],
+                    }
+                }
+            }
+        }
+    </script>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="min-h-screen overflow-x-hidden bg-theme-body-bg text-theme-body-text font-sans">
+    <div class="flex min-h-screen w-full">
+        <!-- Sidebar -->
+        <div id="sidebar" class="sidebar w-80 lg:w-64 min-h-screen fixed inset-y-0 left-0 transform -translate-x-full lg:translate-x-0 z-40 transition-transform duration-300 ease-in-out bg-theme-gradient text-white">
+            <!-- Sidebar content -->
+            {% block sidebar %}{% endblock %}
+        </div>
+        <div id="sidebar-overlay" class="fixed inset-0 bg-black bg-opacity-50 z-30 hidden lg:hidden"></div>
+        
+        <div class="flex-1 flex flex-col min-h-screen lg:ml-64">
+            {% block nav %}{% endblock %}
+            <main class="flex-1 p-4 md:p-8 overflow-y-auto">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% block extra_body %}{% endblock %}
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const sidebar = document.getElementById('sidebar');
+        const overlay = document.getElementById('sidebar-overlay');
+        const hamburger = document.getElementById('sidebar-hamburger');
+        const closeBtn = document.getElementById('sidebar-close');
+
+        function openSidebar() {
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            overlay.classList.remove('hidden');
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('translate-x-0');
+            sidebar.classList.add('-translate-x-full');
+            overlay.classList.add('hidden');
+        }
+
+        if (hamburger) {
+            hamburger.addEventListener('click', function(event) {
+                event.stopPropagation();
+                openSidebar();
+            });
+        }
+
+        if (closeBtn) {
+            closeBtn.addEventListener('click', function(event) {
+                event.stopPropagation();
+                closeSidebar();
+            });
+        }
+
+        if (overlay) {
+            overlay.addEventListener('click', closeSidebar);
+        }
+    });
+    </script>
+</body>
+</html> 
