@@ -68,6 +68,8 @@ INSTALLED_APPS = [
     "core",
     "accounts",
     "dashboard",
+    "inventory",
+    "sales",
     
     # Third Party Packages
     "django_htmx",

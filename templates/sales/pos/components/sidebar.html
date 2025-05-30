@@ -1,0 +1,49 @@
+<aside class="sidebar flex flex-col h-full z-40 bg-theme-gradient text-white w-80 lg:w-64" aria-label="POS Sidebar Navigation">
+    <div class="p-4 flex flex-col items-center justify-center bg-transparent relative">
+        <div class="flex flex-col items-center gap-3 w-full">
+            <i class="fas fa-cash-register fa-lg"></i>
+            <span class="font-bold text-lg tracking-wide text-center w-full">POS</span>
+        </div>
+    </div>
+    <div class="flex-1 flex flex-col justify-between">
+        <ul class="flex flex-col gap-y-1.5 mt-2 px-2">
+            <li>
+                <a href="{% url 'pos_main' %}" class="flex items-center gap-x-3 px-3 py-3 text-base font-semibold rounded-l-full transition-colors bg-white bg-opacity-90 text-theme-primary shadow-sm border-l-4 border-theme-primary">
+                    <i class="fas fa-plus fa-fw w-5 h-5"></i>
+                    <span>New Sale</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'pos_cart' %}" class="flex items-center gap-x-3 px-3 py-3 text-base font-semibold rounded-l-full transition-colors text-white hover:bg-white hover:bg-opacity-20 hover:text-theme-primary">
+                    <i class="fas fa-shopping-cart fa-fw w-5 h-5"></i>
+                    <span>Current Cart</span>
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'pos_checkout' %}" class="flex items-center gap-x-3 px-3 py-3 text-base font-semibold rounded-l-full transition-colors text-white hover:bg-white hover:bg-opacity-20 hover:text-theme-primary">
+                    <i class="fas fa-credit-card fa-fw w-5 h-5"></i>
+                    <span>Checkout</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="flex items-center gap-x-3 px-3 py-3 text-base font-semibold rounded-l-full transition-colors text-white hover:bg-white hover:bg-opacity-20 hover:text-theme-primary">
+                    <i class="fas fa-undo fa-fw w-5 h-5"></i>
+                    <span>Returns</span>
+                </a>
+            </li>
+            <li>
+                <a href="#" class="flex items-center gap-x-3 px-3 py-3 text-base font-semibold rounded-l-full transition-colors text-white hover:bg-white hover:bg-opacity-20 hover:text-theme-primary">
+                    <i class="fas fa-pause fa-fw w-5 h-5"></i>
+                    <span>Hold Sale</span>
+                </a>
+            </li>
+        </ul>
+        <div class="mt-6 mb-2 px-2">
+            <hr class="border-white border-opacity-30 mb-4">
+            <a href="/dashboard/" class="flex items-center gap-x-3 px-3 py-3 text-base font-semibold rounded-l-full transition-colors text-white hover:bg-white hover:bg-opacity-20 hover:text-theme-primary w-full">
+                <i class="fas fa-arrow-left fa-fw w-5 h-5"></i>
+                <span>Back to Dashboard</span>
+            </a>
+        </div>
+    </div>
+</aside> 

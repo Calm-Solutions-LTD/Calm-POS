@@ -1,0 +1,89 @@
+{% extends 'core/base.html' %}
+
+{% block sidebar %}
+    {% include 'sales/pos/components/sidebar.html' %}
+{% endblock %}
+
+{% block content %}
+<div class="container mx-auto py-8">
+    <div class="flex items-center justify-between mb-4">
+        <div class="text-2xl font-bold text-theme-body-text">Point of Sale (POS)</div>
+        <div>
+            <!-- Concurrent Carts Tabs -->
+            <div class="flex gap-2">
+                {% for cart in concurrent_carts %}
+                    <a href="#" class="px-4 py-2 rounded-t-lg font-semibold {% if cart.active %}bg-theme-primary text-white{% else %}bg-gray-200 text-gray-700{% endif %}">
+                        {{ cart.label }}
+                    </a>
+                {% endfor %}
+                <a href="#" class="px-3 py-2 rounded-t-lg bg-green-100 text-green-700 font-bold">+ New Cart</a>
+            </div>
+        </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <!-- Product Search and Quick Add -->
+        <div class="md:col-span-2">
+            <input type="text" class="w-full p-3 border rounded mb-4" placeholder="Scan or search for a product...">
+            <!-- Quick Select Buttons -->
+            <div class="mb-4 flex flex-wrap gap-2">
+                <button class="bg-theme-primary text-white px-3 py-2 rounded shadow">Coca-Cola</button>
+                <button class="bg-theme-primary text-white px-3 py-2 rounded shadow">Fanta</button>
+                <button class="bg-theme-primary text-white px-3 py-2 rounded shadow">Water</button>
+                <!-- Add more quick select buttons as needed -->
+            </div>
+            <div class="bg-white rounded shadow p-4 min-h-[200px]">
+                <div class="font-semibold mb-2">Product Search Results</div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {% for product in products %}
+                    <div class="flex items-center gap-3 border rounded p-2 hover:bg-blue-50 transition">
+                        <img src="{{ product.thumbnail }}" alt="{{ product.name }}" class="w-10 h-10 rounded bg-gray-100">
+                        <div class="flex-1">
+                            <div class="font-bold">{{ product.name }}</div>
+                            <div class="text-sm text-gray-500">{{ product.sku }}</div>
+                        </div>
+                        <div class="font-semibold text-theme-primary">KES {{ product.price }}</div>
+                        <button class="ml-2 bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700">Add</button>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        <!-- Cart Summary -->
+        <div>
+            <div class="bg-theme-navbar-bg rounded-xl shadow p-4">
+                <div class="font-semibold text-lg mb-2">Current Cart</div>
+                {% if cart.items %}
+                <ul class="divide-y divide-gray-200 mb-4">
+                    {% for item in cart.items %}
+                    <li class="flex items-center justify-between py-2">
+                        <div>
+                            <span class="font-semibold">{{ item.product.name }}</span>
+                            <span class="text-xs text-gray-500">x{{ item.quantity }}</span>
+                        </div>
+                        <div class="font-semibold">KES {{ item.subtotal }}</div>
+                    </li>
+                    {% endfor %}
+                </ul>
+                <div class="flex justify-between font-bold mb-2">
+                    <span>Total:</span>
+                    <span>KES {{ cart.total }}</span>
+                </div>
+                <div class="flex justify-between mb-2">
+                    <span>Discount:</span>
+                    <span>KES {{ cart.discount }}</span>
+                </div>
+                <div class="flex justify-between text-lg font-bold mb-4">
+                    <span>Final Total:</span>
+                    <span>KES {{ cart.final_total }}</span>
+                </div>
+                {% else %}
+                <div class="text-gray-400 text-center">No items in cart.</div>
+                {% endif %}
+                <div class="mt-4">
+                    <a href="{% url 'pos_checkout' %}" class="block w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 text-center font-bold transition">Checkout</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 
